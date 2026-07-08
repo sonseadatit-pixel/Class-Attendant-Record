@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Class Attendance</title>
+  <link rel="icon" type="image/png" href="Meww profile .jpg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -12,7 +13,7 @@
 <body>
   <div class="app-shell">
     <main class="dashboard-wrapper">
-      <header class="dashboard-header">
+      <header class="dashboard-header" >
         <div class="dashboard-header__content">
           <div class="dashboard-header__title">
             <h1 class="dashboard-title">Class Attendance</h1>
@@ -112,18 +113,33 @@
         </article>
       </section>
 
-      <section class="panel-card">
+      <section class="panel-card ">
         <div class="panel-card__header">
           <div class="panel-card__header-title">
             <p class="panel-overline">Attendance Register</p>
             <h2 class="panel-title">Attendance details</h2>
             <p class="panel-subtitle">Review and update student attendance with confidence.</p>
           </div>
-          <div class="panel-actions">
-            <button id="saveAttendance" class="btn btn-primary" aria-label="Save attendance">Save Attendance</button>
-            <button id="addStudent" class="btn btn-secondary" aria-label="Add student">+ Add Student</button>
-            <button id="importExcel" class="btn btn-outline" aria-label="Import Excel">Import Excel</button>
-            <button id="exportExcel" class="btn btn-outline" aria-label="Export Excel">Export Excel</button>
+          <div class="panel-actions border bg-dark ">
+             <div class="search-filter-bar ">
+               <div class="search-box">
+                 <input id="search" class="field-input search-input" placeholder="Search by name or ID" />
+               </div>
+               <div class="filter-box">
+                 <select id="statusFilter" class="field-select filter-select">
+                   <option value="">All statuses</option>
+                   <option value="present">Present</option>
+                   <option value="absent">Absent</option>
+                   <option value="permission">Permission</option>
+                 </select>
+               </div>
+               <div class="toolbar-actions">
+                 <button id="addStudent" class="btn btn-primary">+ Add Student</button>
+                 <button id="importExcel" class="btn btn-outline">Import Excel</button>
+                 <button id="exportExcel" class="btn btn-outline">Export Excel</button>
+               </div>
+              </div>
+              <button id="saveAttendance" class="btn btn-primary" aria-label="Save attendance">Save Attendance</button>
           </div>
         </div>
 
@@ -160,16 +176,16 @@
           <form id="addStudentForm">
             <div class="modal-body">
               <div class="form-field">
-                <label class="field-label">Student ID</label>
-                <input name="student_id" class="field-input" required />
+                <label class="field-label" for="studentIdInput">Student ID</label>
+                <input id="studentIdInput" name="student_id" class="field-input" required />
               </div>
               <div class="form-field">
-                <label class="field-label">Full name</label>
-                <input name="full_name" class="field-input" required />
+                <label class="field-label" for="fullNameInput">Full name</label>
+                <input id="fullNameInput" name="full_name" class="field-input" required />
               </div>
               <div class="form-field">
-                <label class="field-label">Gender</label>
-                <select name="gender" class="field-select">
+                <label class="field-label" for="genderSelect">Gender</label>
+                <select id="genderSelect" name="gender" class="field-select">
                   <option value="">Choose gender</option>
                   <option>Male</option>
                   <option>Female</option>

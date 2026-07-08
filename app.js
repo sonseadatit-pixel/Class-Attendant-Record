@@ -20,10 +20,14 @@ const importExcelBtn = document.getElementById('importExcel');
 const excelFileInput = document.getElementById('excelFileInput');
 let attendanceSubjectField;
 const subtitleEl = document.querySelector('.page-subtitle');
+const searchInput = document.getElementById('search');
+const filterSection = document.getElementById('filterSection');
+const statusFilter = document.getElementById('statusFilter');
 
 // modal elements
 const addStudentModalEl = document.getElementById('addStudentModal');
 let addStudentModal = null;
+let editingStudentId = null;
 
 function formatDateLabel(value) {
   if (!value) return 'No date selected';
@@ -41,7 +45,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function loadStudents() {
   if (typeof attendanceSubjectField === 'undefined') await detectAttendanceSubjectField();
-  const { data: students, error } = await supabase.from('students').select('*').order('full_name');
+  const search = searchInput?.value?.trim();
+  const sectionFilter = filterSection?.value?.trim();
+  let query = supabase.from('students').select('*');
+  if (search) query = query.or(`full_name.ilike.%${search}%,student_id.ilike.%${search}%`);
+  if (sectionFilter) query = query.eq('section', sectionFilter);
+  const { data: students, error } = await query.order('full_name');
   if (error) return console.error(error);
   studentsTable.innerHTML = '';
   totalStudentsEl.textContent = students.length;
@@ -54,7 +63,7 @@ async function loadStudents() {
       <td>${i + 1}</td>
       <td>${s.student_id}</td>
       <td>${s.full_name}</td>
-      <td>${s.gender || ''}</td>
+      <td>${s.gender ? `<span class="gender-badge ${String(s.gender).toLowerCase()}">${s.gender}</span>` : ''}</td>
       <td>
         <div class="status-group">
           <button type="button" class="status-chip present" data-status="present">Present</button>
@@ -62,14 +71,37 @@ async function loadStudents() {
           <button type="button" class="status-chip permission" data-status="permission">Permission</button>
         </div>
       </td>
-      <td class="remark-cell"><input type="text" class="form-control remark-input" placeholder="Add note..." /></td>
-      <td class="text-end"><button type="button" class="btn btn-ghost btn-sm delete-btn" data-id="${s.id}">Delete</button></td>
+      <td class="remark-cell">
+           <input type="text" class="form-control remark-input" placeholder="Add note..." />
+       </td>
+       <td>
+       <div class="action-row">
+            <button type="button" class="btn btn-sm btn-outline-primary edit-btn" data-id="${s.id}">Edit</button>
+            <button type="button" class="btn btn-sm btn-ghost delete-btn" data-id="${s.id}">Delete</button>
+          </div>
+       </td>
     `;
     studentsTable.appendChild(tr);
   }
 
   await loadAttendanceForDate();
   loadTodayCounts();
+}
+
+async function loadSections() {
+  const { data, error } = await supabase.from('students').select('section');
+  if (error) return console.error(error);
+  if (!filterSection) return;
+  const current = filterSection.value;
+  filterSection.innerHTML = '<option value="">All sections</option>';
+  const seen = new Set();
+  data.forEach(r => {
+    if (r.section && !seen.has(r.section)) {
+      seen.add(r.section);
+      const opt = document.createElement('option'); opt.value = r.section; opt.textContent = r.section; filterSection.appendChild(opt);
+    }
+  });
+  filterSection.value = current;
 }
 
 async function loadTodayCounts() {
@@ -125,11 +157,37 @@ studentsTable.addEventListener('click', async (e) => {
     loadStudents();
     return;
   }
+
+  const editButton = e.target.closest('.edit-btn');
+  if (editButton) {
+    const id = editButton.dataset.id;
+      const { data, error } = await supabase.from('students').select('*').eq('id', id).single();
+    if (error) return console.error(error);
+    const studentIdInput = document.getElementById('studentIdInput');
+    const fullNameInput = document.getElementById('fullNameInput');
+    const genderSelect = document.getElementById('genderSelect');
+    if (studentIdInput) studentIdInput.value = data.student_id || '';
+    if (fullNameInput) fullNameInput.value = data.full_name || '';
+    if (genderSelect) genderSelect.value = data.gender || '';
+    editingStudentId = id;
+    const title = addStudentModalEl.querySelector('.modal-title');
+    const submitBtn = document.querySelector('#addStudentForm button[type="submit"]');
+    if (title) title.textContent = 'Edit Student';
+    if (submitBtn) submitBtn.textContent = 'Save Changes';
+    if (addStudentModal) addStudentModal.show();
+    return;
+  }
 });
 
 async function saveAttendance() {
   const date = attDateInput.value || new Date().toISOString().slice(0, 10);
   const subject = attendanceSubjectField ? courseSelect?.value?.trim() || null : null;
+  const attendanceMap = await fetchAttendanceMap(date);
+  if (attendanceMap === null) {
+    alert('Attendance save failed. Check console.');
+    return;
+  }
+
   const rows = Array.from(studentsTable.querySelectorAll('tr'));
   const operations = [];
 
@@ -140,44 +198,22 @@ async function saveAttendance() {
     const status = selected?.dataset.status;
     const remarkInput = tr.querySelector('.remark-input');
     const remark = remarkInput?.value.trim() || null;
-
-    let attendanceQuery = supabase
-      .from('attendance')
-      .select('id')
-      .eq('student_id', studentId)
-      .eq('date', date);
-
-    if (subject) attendanceQuery = attendanceQuery.eq(attendanceSubjectField, subject);
-
-    const { data: existing, error: fetchError } = await attendanceQuery.maybeSingle();
-
-    if (fetchError) {
-      console.error('Fetch attendance error', fetchError);
-      alert('Attendance save failed. Check console.');
-      return;
-    }
+    const existing = attendanceMap.get(studentId);
 
     if (!status) {
       if (existing?.id) {
-        operations.push(
-          supabase.from('attendance').delete().eq('id', existing.id)
-        );
+        operations.push(supabase.from('attendance').delete().eq('id', existing.id));
       }
       continue;
     }
 
+    const payload = { status, remark };
+    if (subject) payload[attendanceSubjectField] = subject;
+
     if (existing?.id) {
-      const payload = { status, remark };
-      if (subject) payload[attendanceSubjectField] = subject;
-      operations.push(
-        supabase.from('attendance').update(payload).eq('id', existing.id)
-      );
+      operations.push(supabase.from('attendance').update(payload).eq('id', existing.id));
     } else {
-      const payload = { student_id: studentId, date, status, remark };
-      if (subject) payload[attendanceSubjectField] = subject;
-      operations.push(
-        supabase.from('attendance').insert([payload])
-      );
+      operations.push(supabase.from('attendance').insert([{ student_id: studentId, date, ...payload }]));
     }
   }
 
@@ -196,6 +232,24 @@ async function saveAttendance() {
 
   updateAttendanceSummaryFromDOM();
   alert('Attendance saved successfully.');
+}
+
+async function fetchAttendanceMap(date) {
+  const subject = attendanceSubjectField ? courseSelect?.value?.trim() || null : null;
+  let query = supabase.from('attendance').select('id, student_id, status, remark').eq('date', date);
+  if (subject) query = query.eq(attendanceSubjectField, subject);
+  const { data, error } = await query.order('created_at', { ascending: false });
+  if (error) {
+    console.error('Fetch attendance error', error);
+    return null;
+  }
+  const map = new Map();
+  data?.forEach(row => {
+    if (!map.has(row.student_id)) {
+      map.set(row.student_id, row);
+    }
+  });
+  return map;
 }
 
 function updateAttendanceSummaryFromDOM() {
@@ -244,6 +298,19 @@ async function loadAttendanceForDate() {
       if (input) input.value = record.remark || '';
     });
   }
+  applyStatusFilter();
+}
+
+function applyStatusFilter() {
+  const status = statusFilter?.value || '';
+  studentsTable.querySelectorAll('tr').forEach(tr => {
+    if (!status) {
+      tr.hidden = false;
+      return;
+    }
+    const selected = tr.querySelector('.status-chip.selected');
+    tr.hidden = !(selected?.dataset.status === status);
+  });
 }
 
 function changeDate(delta) {
@@ -346,9 +413,29 @@ async function importStudentsFromExcel(event) {
 }
 
 // Add student modal handling
-document.getElementById('addStudent').addEventListener('click', () => {
-  if (addStudentModal) addStudentModal.show();
-});
+const addStudentButton = document.getElementById('addStudent');
+const addStudentForm = document.getElementById('addStudentForm');
+
+function resetAddStudentModal() {
+  editingStudentId = null;
+  if (!addStudentForm) return;
+  addStudentForm.reset();
+  const title = addStudentModalEl.querySelector('.modal-title');
+  const submitBtn = addStudentForm.querySelector('button[type="submit"]');
+  if (title) title.textContent = 'Add Student';
+  if (submitBtn) submitBtn.textContent = 'Add Student';
+}
+
+if (addStudentButton) {
+  addStudentButton.addEventListener('click', () => {
+    resetAddStudentModal();
+    if (addStudentModal) addStudentModal.show();
+  });
+}
+
+if (addStudentModalEl) {
+  addStudentModalEl.addEventListener('hidden.bs.modal', resetAddStudentModal);
+}
 
 document.getElementById('addStudentForm').addEventListener('submit', async (ev) => {
   ev.preventDefault();
@@ -359,15 +446,38 @@ document.getElementById('addStudentForm').addEventListener('submit', async (ev) 
     full_name: fd.get('full_name'),
     gender: fd.get('gender') || null
   };
-  const { data, error } = await supabase.from('students').insert([payload]);
+  let data, error;
+  if (editingStudentId) {
+    ({ data, error } = await supabase.from('students').update(payload).eq('id', editingStudentId));
+  } else {
+    ({ data, error } = await supabase.from('students').insert([payload]));
+  }
   if (error) {
     alert('Add student failed: ' + error.message);
     return;
   }
   form.reset();
   if (addStudentModal) addStudentModal.hide();
+  // reset editing state and UI
+  editingStudentId = null;
+  const title = addStudentModalEl.querySelector('.modal-title');
+  const submitBtn = form.querySelector('button[type="submit"]');
+  if (title) title.textContent = 'Add Student';
+  if (submitBtn) submitBtn.textContent = 'Add Student';
+  loadSections();
   loadStudents();
 });
+
+// wire search and filter
+if (searchInput) {
+  let t = null;
+  searchInput.addEventListener('input', () => { clearTimeout(t); t = setTimeout(loadStudents, 250); });
+}
+if (filterSection) filterSection.addEventListener('change', loadStudents);
+if (statusFilter) statusFilter.addEventListener('change', loadStudents);
+
+// initial sections
+loadSections();
 
 // initial load
 loadStudents();
