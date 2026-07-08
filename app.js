@@ -60,24 +60,24 @@ async function loadStudents() {
     const tr = document.createElement('tr');
     tr.dataset.studentId = s.id;
     tr.innerHTML = `
-      <td>${i + 1}</td>
-      <td>${s.student_id}</td>
-      <td>${s.full_name}</td>
-      <td>${s.gender ? `<span class="gender-badge ${String(s.gender).toLowerCase()}">${s.gender}</span>` : ''}</td>
-      <td>
+      <td data-label="No.">${i + 1}</td>
+      <td data-label="Student ID">${s.student_id}</td>
+      <td data-label="Student Name">${s.full_name}</td>
+      <td data-label="Gender">${s.gender ? `<span class="gender-badge ${String(s.gender).toLowerCase()}">${s.gender}</span>` : ''}</td>
+      <td data-label="Attendance Status">
         <div class="status-group">
           <button type="button" class="status-chip present" data-status="present">Present</button>
           <button type="button" class="status-chip absent" data-status="absent">Absent</button>
           <button type="button" class="status-chip permission" data-status="permission">Permission</button>
         </div>
       </td>
-      <td class="remark-cell">
+      <td data-label="Remark" class="remark-cell">
            <input type="text" class="form-control remark-input" placeholder="Add note..." />
        </td>
-       <td>
-       <div class="action-row">
-            <button type="button" class="btn btn-sm btn-outline-primary edit-btn" data-id="${s.id}">Edit</button>
-            <button type="button" class="btn btn-sm btn-ghost delete-btn" data-id="${s.id}">Delete</button>
+       <td data-label="Action">
+         <div class="action-row">
+            <button type="button" class="btn btn-sm edit-btn" data-id="${s.id}">Edit</button>
+            <button type="button" class="btn btn-sm delete-btn" data-id="${s.id}">Delete</button>
           </div>
        </td>
     `;
