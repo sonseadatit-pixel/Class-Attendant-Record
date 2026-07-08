@@ -309,6 +309,10 @@ function applyStatusFilter() {
       return;
     }
     const selected = tr.querySelector('.status-chip.selected');
+    if (status === 'blank') {
+      tr.hidden = !!selected;
+      return;
+    }
     tr.hidden = !(selected?.dataset.status === status);
   });
 }
@@ -327,9 +331,14 @@ if (attDateInput) attDateInput.addEventListener('change', async () => {
   if (subtitleEl) subtitleEl.textContent = formatDateLabel(attDateInput.value);
   await loadStudents();
 });
+const attendanceReportBtn = document.getElementById('attendanceReport');
+
 if (importExcelBtn) importExcelBtn.addEventListener('click', () => excelFileInput?.click());
 if (excelFileInput) excelFileInput.addEventListener('change', importStudentsFromExcel);
 if (saveAttendanceBtn) saveAttendanceBtn.addEventListener('click', saveAttendance);
+if (attendanceReportBtn) attendanceReportBtn.addEventListener('click', () => {
+  window.location.href = 'student-report.html';
+});
   
 async function detectAttendanceSubjectField() {
   try {

@@ -14,13 +14,13 @@
   <div class="app-shell">
     <main class="dashboard-wrapper">
       <header class="dashboard-header" >
-        <div class="dashboard-header__content">
+        <div class="dashboard-header__content ">
           <div class="dashboard-header__title">
             <h1 class="dashboard-title">Class Attendance</h1>
             <p class="dashboard-subtitle">Tuesday, 7 July 2026</p>
           </div>
-          <div class="dashboard-filters">
-            <div class="field-group">
+          <div class="dashboard-filters col-12">
+             <div class="field-group col-3">
               <label for="week">Week</label>
               <select id="week" class="field-select" aria-label="Select week">
                 <option>Week 1</option>
@@ -41,7 +41,7 @@
                 <option>Week 16</option>
               </select>
             </div>
-            <div class="field-group">
+            <div class="field-group col-3">
               <label for="course">Course</label>
               <select id="course" class="field-select" aria-label="Select course">
                 <option>E-Commerce Technology</option>
@@ -52,11 +52,15 @@
                 <option>Software Project Management</option>
               </select>
             </div>
-            <div class="field-group">
+            <div class="field-group col-3">
               <label for="attDate">Date</label>
               <input id="attDate" type="date" class="field-input" aria-label="Pick attendance date" />
             </div>
-          </div>
+            <div class="field-group col-3">
+              <label>View Attandance</label>
+              <button id="attendanceReport" class="btn btn-primary">Student Report</button>
+            </div>
+           </div>
         </div>
       </header>
 
@@ -122,24 +126,25 @@
           </div>
           <div class="panel-actions border bg-dark ">
              <div class="search-filter-bar ">
-               <div class="search-box">
+               <div class="search-box  ">
                  <input id="search" class="field-input search-input" placeholder="Search by name or ID" />
                </div>
-               <div class="filter-box">
+               <div class="filter-box  ">
                  <select id="statusFilter" class="field-select filter-select">
                    <option value="">All statuses</option>
                    <option value="present">Present</option>
                    <option value="absent">Absent</option>
                    <option value="permission">Permission</option>
+                   <option value="blank">No status</option>
                  </select>
                </div>
-               <div class="toolbar-actions">
-                 <button id="addStudent" class="btn btn-primary">+ Add Student</button>
-                 <button id="importExcel" class="btn btn-outline">Import Excel</button>
-                 <button id="exportExcel" class="btn btn-outline">Export Excel</button>
+               <div class="toolbar-actions  ">
+                 <button id="addStudent" class="btn btn-primary  ">+ Add Student</button>
+                 <button id="importExcel" class="btn btn-outline  ">Import Excel</button>
+                 <button id="exportExcel" class="btn btn-outline  ">Export Excel</button>
                </div>
               </div>
-              <button id="saveAttendance" class="btn btn-primary" aria-label="Save attendance">Save Attendance</button>
+              <button id="saveAttendance" class="btn btn-primary  " aria-label="Save attendance">Save Attendance</button>
           </div>
         </div>
 
