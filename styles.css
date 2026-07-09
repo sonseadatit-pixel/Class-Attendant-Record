@@ -83,7 +83,7 @@ select {
 }
 
 .dashboard-filters {
-  display: grid;
+  display: grid ;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
 }
@@ -429,6 +429,51 @@ select {
   font-size: 0.95rem;
   vertical-align: middle;
   border-bottom: 1px solid #eff2f7;
+}
+
+.attendance-table td.recorded-dates {
+  vertical-align: top;
+  max-width: 420px;
+  white-space: normal;
+}
+
+.date-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.date-entry {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.date-label {
+  color: var(--text-muted);
+  font-weight: 700;
+  min-width: 92px;
+}
+
+.badge-small {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.badge-small.present { background: var(--success); }
+.badge-small.absent { background: var(--danger); }
+.badge-small.pm { background: var(--warning); color: #111827; }
+
+.record-totals {
+  margin-top: 6px;
+  font-weight: 700;
+  color: var(--text-strong);
 }
 
 .status-group {

@@ -19,28 +19,48 @@ async function loadStudentReport() {
   const attendanceMap = new Map();
   attendanceRows?.forEach(row => {
     if (!row?.student_id) return;
-    const entry = attendanceMap.get(row.student_id) || { present: 0, absent: 0, permission: 0, dates: new Set() };
+    const entry = attendanceMap.get(row.student_id) || { present: 0, absent: 0, permission: 0, dateCounts: new Map() };
     if (row.status === 'present') entry.present += 1;
     if (row.status === 'absent') entry.absent += 1;
     if (row.status === 'permission') entry.permission += 1;
-    if (row.date) entry.dates.add(row.date);
+
+    if (row.date) {
+      const iso = new Date(row.date).toISOString();
+      const d = new Date(row.date);
+      const formatted = `${String(d.getDate()).padStart(2, '0')}-${d.getMonth() + 1}-${String(d.getFullYear()).slice(-2)}`;
+      const dc = entry.dateCounts.get(iso) || { iso, formatted, present: 0, absent: 0, permission: 0 };
+      if (row.status === 'present') dc.present += 1;
+      if (row.status === 'absent') dc.absent += 1;
+      if (row.status === 'permission') dc.permission += 1;
+      entry.dateCounts.set(iso, dc);
+    }
+
     attendanceMap.set(row.student_id, entry);
   });
 
   reportTableBody.innerHTML = '';
 
   students.forEach((student, index) => {
-    const record = attendanceMap.get(student.id) || { present: 0, absent: 0, permission: 0, dates: new Set() };
-    const dates = Array.from(record.dates).sort((a,b) => new Date(b) - new Date(a));
+    const record = attendanceMap.get(student.id) || { present: 0, absent: 0, permission: 0, dateCounts: new Map() };
+    const dateEntries = Array.from(record.dateCounts.values()).sort((a, b) => new Date(b.iso) - new Date(a.iso));
     const tr = document.createElement('tr');
+    // build structured HTML for recorded dates
+    const dateHtml = dateEntries.length ? (`<div class="date-list">${dateEntries.map(e => `
+        <div class="date-entry">
+          <span class="date-label">${e.formatted}</span>
+          <span class="badge-small present">P ${e.present}</span>
+          <span class="badge-small absent">A ${e.absent}</span>
+          <span class="badge-small pm">PM ${e.permission}</span>
+        </div>
+      `).join('')}</div>
+      <div class="record-totals">(Total P=${record.present}, A=${record.absent}, PM=${record.permission})</div>
+    `) : '';
+
     tr.innerHTML = `
       <td>${index + 1}</td>
       <td>${student.student_id}</td>
       <td>${student.full_name}</td>
-      <td>${record.present}</td>
-      <td>${record.absent}</td>
-      <td>${record.permission}</td>
-      <td>${dates.join(', ')}</td>
+      <td class="recorded-dates">${dateHtml}</td>
     `;
     reportTableBody.appendChild(tr);
   });
